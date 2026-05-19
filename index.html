@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChronoVault Escape</title>
+  <meta name="description" content="Jeu d'évasion web multi-étapes avec joueurs, score, classement et défis interactifs." />
+  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+  <style>
+    :root, [data-theme="light"] {
+      --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+      --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+      --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+      --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+      --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+      --text-2xl: clamp(2rem, 1.2rem + 2.5vw, 3.5rem);
+      --space-1: .25rem; --space-2: .5rem; --space-3: .75rem; --space-4: 1rem; --space-5: 1.25rem; --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem; --space-16: 4rem;
+      --color-bg:#f7f6f2; --color-surface:#f9f8f5; --color-surface-2:#fbfbf9; --color-surface-offset:#edeae5; --color-border:#d4d1ca; --color-text:#28251d; --color-text-muted:#6e6a63; --color-text-faint:#a7a49e; --color-primary:#01696f; --color-primary-hover:#0c4e54; --color-accent:#a13544; --color-success:#437a22; --color-warning:#da7101; --radius-sm:.375rem; --radius-md:.75rem; --radius-lg:1rem; --radius-xl:1.5rem; --radius-full:9999px; --shadow-sm:0 1px 2px rgba(0,0,0,.06); --shadow-md:0 8px 24px rgba(0,0,0,.12); --shadow-lg:0 20px 60px rgba(0,0,0,.18); --font-display:'Cabinet Grotesk', sans-serif; --font-body:'Satoshi', sans-serif;
+    }
+    [data-theme="dark"] {
+      --color-bg:#090b12; --color-surface:#10141f; --color-surface-2:#171c2a; --color-surface-offset:#1d2433; --color-border:#2a3349; --color-text:#ecf1ff; --color-text-muted:#acb7d0; --color-text-faint:#6c7896; --color-primary:#4fd1c5; --color-primary-hover:#37b3aa; --color-accent:#b67cff; --color-success:#7ddc73; --color-warning:#ffb454;
+      --shadow-sm:0 1px 2px rgba(0,0,0,.24); --shadow-md:0 10px 30px rgba(0,0,0,.35); --shadow-lg:0 24px 80px rgba(0,0,0,.5);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{-webkit-text-size-adjust:none;text-size-adjust:none;scroll-behavior:smooth}
+    body{min-height:100vh;font-family:var(--font-body);font-size:var(--text-base);line-height:1.6;background:radial-gradient(circle at top, rgba(79,209,197,.14), transparent 25%), radial-gradient(circle at 80% 20%, rgba(182,124,255,.18), transparent 18%), var(--color-bg);color:var(--color-text);overflow-x:hidden}
+    button,input,select{font:inherit;color:inherit}
+    button{cursor:pointer;border:none}
+    img,svg,canvas{display:block;max-width:100%}
+    .app{max-width:1200px;margin:0 auto;padding:var(--space-4)}
+    .skip-link{position:absolute;left:-9999px}.skip-link:focus{left:var(--space-4);top:var(--space-4);z-index:999;padding:var(--space-3);background:var(--color-primary);color:#081017;border-radius:var(--radius-md)}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:var(--space-4);padding:var(--space-4) 0 var(--space-6)}
+    .brand{display:flex;align-items:center;gap:var(--space-3)}
+    .logo{width:54px;height:54px;padding:10px;border-radius:18px;background:linear-gradient(135deg, rgba(79,209,197,.18), rgba(182,124,255,.18));border:1px solid rgba(255,255,255,.08);box-shadow:var(--shadow-md)}
+    .brand h1{font-family:var(--font-display);font-size:var(--text-xl);line-height:1}
+    .brand p{color:var(--color-text-muted);font-size:var(--text-sm)}
+    .theme-toggle{width:46px;height:46px;border-radius:50%;background:var(--color-surface);border:1px solid var(--color-border)}
+    .hero{display:grid;grid-template-columns:1.2fr .8fr;gap:var(--space-6);align-items:stretch}
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,.04), transparent), var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-xl);box-shadow:var(--shadow-lg);backdrop-filter:blur(18px)}
+    .hero-copy,.hero-side,.stage,.results{padding:clamp(var(--space-6),4vw,var(--space-10))}
+    .eyebrow{display:inline-flex;align-items:center;gap:var(--space-2);padding:.35rem .7rem;border-radius:var(--radius-full);background:rgba(79,209,197,.14);color:var(--color-primary);font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.12em}
+    .hero h2{font-family:var(--font-display);font-size:var(--text-2xl);line-height:.96;max-width:12ch;margin:var(--space-4) 0}
+    .hero p{color:var(--color-text-muted);max-width:58ch}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-3);margin-top:var(--space-6)}
+    .stat{padding:var(--space-4);border-radius:var(--radius-lg);background:var(--color-surface-2);border:1px solid rgba(255,255,255,.05)}
+    .stat strong{display:block;font-size:var(--text-lg);font-family:var(--font-display)}
+    .section{margin-top:var(--space-6)}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:var(--space-6)}
+    .col-5{grid-column:span 5}.col-7{grid-column:span 7}
+    .card{padding:var(--space-6);border-radius:var(--radius-xl);background:var(--color-surface);border:1px solid var(--color-border);box-shadow:var(--shadow-md)}
+    .card h3{font-family:var(--font-display);font-size:var(--text-lg);margin-bottom:var(--space-4)}
+    .field{display:grid;gap:var(--space-2);margin-bottom:var(--space-4)}
+    label{font-size:var(--text-sm);color:var(--color-text-muted)}
+    input,select{width:100%;padding:.9rem 1rem;border-radius:var(--radius-md);border:1px solid var(--color-border);background:var(--color-surface-2)}
+    input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--color-primary);outline-offset:3px}
+    .players{display:grid;gap:var(--space-3)}
+    .player-row{display:grid;grid-template-columns:1fr auto;gap:var(--space-3)}
+    .btn-row{display:flex;flex-wrap:wrap;gap:var(--space-3);margin-top:var(--space-4)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:.85rem 1.2rem;border-radius:var(--radius-full);font-weight:700;transition:.18s ease;background:var(--color-surface-2);border:1px solid var(--color-border)}
+    .btn:hover{transform:translateY(-1px)}
+    .btn-primary{background:var(--color-primary);color:#071316;border-color:transparent}
+    .btn-primary:hover{background:var(--color-primary-hover)}
+    .btn-ghost{background:transparent}
+    .room-list{display:grid;gap:var(--space-3)}
+    .room{padding:var(--space-4);border-radius:var(--radius-lg);border:1px solid var(--color-border);background:var(--color-surface-2);display:flex;justify-content:space-between;gap:var(--space-3);align-items:flex-start}
+    .room.active{border-color:var(--color-primary);box-shadow:0 0 0 1px rgba(79,209,197,.3)}
+    .badge{display:inline-block;padding:.25rem .6rem;border-radius:var(--radius-full);font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.08em;background:rgba(182,124,255,.14);color:#d6bbff}
+    .hud{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-3);margin-bottom:var(--space-4)}
+    .hud .tile{padding:var(--space-4);border-radius:var(--radius-lg);background:var(--color-surface-2);border:1px solid rgba(255,255,255,.05)}
+    .tile span{display:block;font-size:var(--text-xs);color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.08em}
+    .tile strong{font-family:var(--font-display);font-size:var(--text-xl);line-height:1.1}
+    .progress{height:12px;border-radius:999px;background:var(--color-surface-offset);overflow:hidden;margin-bottom:var(--space-4)}
+    .progress > div{height:100%;background:linear-gradient(90deg,var(--color-primary),var(--color-accent));width:0%}
+    .stage-title{display:flex;justify-content:space-between;gap:var(--space-3);align-items:flex-start;margin-bottom:var(--space-3)}
+    .stage h3{font-family:var(--font-display);font-size:var(--text-xl)}
+    .clue{padding:var(--space-4);border-radius:var(--radius-lg);background:rgba(79,209,197,.08);border:1px solid rgba(79,209,197,.18);margin:var(--space-4) 0;color:#bff6f0}
+    .feedback{min-height:1.6em;color:var(--color-text-muted);margin-top:var(--space-3)}
+    .status-good{color:var(--color-success)} .status-bad{color:#ff8f8f}
+    .choices{display:grid;gap:var(--space-3);margin-top:var(--space-4)}
+    .choice{padding:var(--space-4);text-align:left;border-radius:var(--radius-lg);background:var(--color-surface-2);border:1px solid var(--color-border)}
+    .sequence{display:flex;gap:var(--space-3);flex-wrap:wrap;margin:var(--space-4) 0}
+    .pad{width:72px;height:72px;border-radius:20px;display:grid;place-items:center;font-weight:800;font-family:var(--font-display);font-size:var(--text-lg);color:#091015;opacity:.9}
+    .pad.active{outline:4px solid rgba(255,255,255,.92);transform:scale(1.06)}
+    .pad.red{background:#ff6b81}.pad.blue{background:#5aa9ff}.pad.green{background:#72e384}.pad.yellow{background:#ffd166}
+    .maze-wrap{display:grid;gap:var(--space-4)}
+    canvas{background:#0b1020;border-radius:var(--radius-lg);border:1px solid rgba(255,255,255,.08)}
+    .keyhint{font-size:var(--text-sm);color:var(--color-text-muted)}
+    .scoreboard{display:grid;gap:var(--space-3)}
+    .rank{display:flex;justify-content:space-between;gap:var(--space-3);align-items:center;padding:var(--space-4);border-radius:var(--radius-lg);background:var(--color-surface-2);border:1px solid var(--color-border)}
+    .rank strong{font-family:var(--font-display);font-size:var(--text-lg)}
+    .hidden{display:none !important}
+    .footer-note{padding:var(--space-6) 0 var(--space-10);color:var(--color-text-faint);font-size:var(--text-sm)}
+    .confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+    .confetti span{position:absolute;width:10px;height:14px;top:-20px;animation:fall linear forwards;border-radius:2px}
+    @keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:.5}}
+    @media (max-width: 900px){.hero,.grid{grid-template-columns:1fr}.col-5,.col-7{grid-column:span 12}.hud{grid-template-columns:repeat(2,1fr)}.stats{grid-template-columns:1fr}.player-row{grid-template-columns:1fr}}
+    @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;scroll-behavior:auto !important}}
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Aller au contenu</a>
+  <div class="confetti" aria-hidden="true"></div>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo" aria-label="Logo ChronoVault">
+          <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+            <path d="M32 8 14 18v14c0 12 7.4 19.7 18 24 10.6-4.3 18-12 18-24V18L32 8Z" stroke="currentColor" stroke-width="3.2"/>
+            <path d="M23 31h18M32 22v18" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/>
+            <circle cx="32" cy="32" r="7" fill="currentColor" opacity=".18"/>
+          </svg>
+        </div>
+        <div>
+          <h1>ChronoVault Escape</h1>
+          <p>Jeu d'évasion web multi-étapes, coop, score et classement.</p>
+        </div>
+      </div>
+      <button class="theme-toggle" data-theme-toggle aria-label="Basculer le thème">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </header>
+
+    <main id="main">
+      <section class="hero section">
+        <div class="panel hero-copy">
+          <span class="eyebrow">Mission 10 minutes</span>
+          <h2>Déverrouillez le coffre avant l'effondrement temporel.</h2>
+          <p>Entrez les noms des joueurs, choisissez une salle et résolvez 5 épreuves successives. Chaque bonne réponse rapporte des points. Chaque erreur vous coûte du temps et du score.</p>
+          <div class="stats" aria-label="Aperçu du jeu">
+            <div class="stat"><strong>5</strong><span>Étapes</span></div>
+            <div class="stat"><strong>10 min</strong><span>Temps limite</span></div>
+            <div class="stat"><strong>1–4</strong><span>Joueurs</span></div>
+          </div>
+        </div>
+        <aside class="panel hero-side">
+          <h3 style="font-family:var(--font-display);font-size:var(--text-lg);margin-bottom:var(--space-3)">Règles</h3>
+          <ul role="list" style="display:grid;gap:var(--space-3);color:var(--color-text-muted)">
+            <li>Chaque étape validée donne 100 pts + bonus temps.</li>
+            <li>Une mauvaise réponse retire 10 pts, au 3e échec un indice apparaît.</li>
+            <li>Le classement de session garde toutes les équipes jouées sans recharger la page.</li>
+          </ul>
+        </aside>
+      </section>
+
+      <section class="grid section">
+        <section class="card col-5" aria-labelledby="setup-title">
+          <h3 id="setup-title">Préparer une équipe</h3>
+          <div class="field">
+            <label for="teamName">Nom de l'équipe</label>
+            <input id="teamName" type="text" placeholder="Ex. Les Décodeurs du Temps" maxlength="40" />
+          </div>
+          <div class="field">
+            <label for="playerCount">Nombre de joueurs</label>
+            <select id="playerCount">
+              <option value="1">1 joueur</option>
+              <option value="2" selected>2 joueurs</option>
+              <option value="3">3 joueurs</option>
+              <option value="4">4 joueurs</option>
+            </select>
+          </div>
+          <div class="players" id="players"></div>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="startBtn">Lancer la mission</button>
+            <button class="btn btn-ghost" id="resetBtn">Réinitialiser la session</button>
+          </div>
+          <p class="feedback" id="setupFeedback"></p>
+        </section>
+
+        <aside class="card col-7" aria-labelledby="rooms-title">
+          <div style="display:flex;justify-content:space-between;gap:var(--space-3);align-items:center;margin-bottom:var(--space-4)">
+            <h3 id="rooms-title">Choisir une salle</h3>
+            <span class="badge" id="selectedRoomBadge">Laboratoire quantique</span>
+          </div>
+          <div class="room-list" id="roomList"></div>
+        </aside>
+      </section>
+
+      <section class="panel stage section hidden" id="gameSection" aria-live="polite">
+        <div class="hud">
+          <div class="tile"><span>Temps restant</span><strong id="timeLeft">10:00</strong></div>
+          <div class="tile"><span>Score</span><strong id="scoreValue">0</strong></div>
+          <div class="tile"><span>Étape</span><strong id="stageValue">1/5</strong></div>
+          <div class="tile"><span>Équipe</span><strong id="teamValue">—</strong></div>
+        </div>
+        <div class="progress" aria-hidden="true"><div id="progressBar"></div></div>
+        <div class="stage-title">
+          <div>
+            <span class="eyebrow" id="roomThemeLabel">Laboratoire quantique</span>
+            <h3 id="stageTitle">—</h3>
+          </div>
+          <button class="btn btn-ghost" id="hintBtn">Afficher un indice</button>
+        </div>
+        <p id="stageDescription" style="color:var(--color-text-muted);max-width:70ch"></p>
+        <div class="clue hidden" id="hintBox"></div>
+        <div id="stageContent"></div>
+        <p class="feedback" id="gameFeedback"></p>
+      </section>
+
+      <section class="panel results section hidden" id="resultsSection">
+        <h3 style="font-family:var(--font-display);font-size:var(--text-xl);margin-bottom:var(--space-3)">Résultat de mission</h3>
+        <p id="resultsSummary" style="color:var(--color-text-muted);margin-bottom:var(--space-4)"></p>
+        <div class="scoreboard" id="finalPlayers"></div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="playAgainBtn">Relancer une autre équipe</button>
+        </div>
+      </section>
+
+      <section class="card section" aria-labelledby="session-title">
+        <h3 id="session-title">Classement de session</h3>
+        <div class="scoreboard" id="sessionBoard"></div>
+      </section>
+    </main>
+
+    <p class="footer-note">Aucune donnée n'est stockée côté navigateur. Le classement reste actif tant que la page reste ouverte.</p>
+  </div>
+
+  <script>
+    (() => {
+      const rooms = [
+        { id: 'lab', name: 'Laboratoire quantique', accent: '#4fd1c5', intro: 'Des protocoles instables et des chiffres chiffrés.', stages: [
+          { type: 'code', title: 'Verrou numérique', description: 'Trouvez le code à 4 chiffres. Indice : la somme des chiffres vaut 18, le premier est 2 fois le dernier, les chiffres du milieu sont 4 et 6.', answer: '8460', hint: 'Relis l\'indice : si le premier vaut 2 fois le dernier et la somme vaut 18, teste les extrêmes en premier.' },
+          { type: 'anagram', title: 'Mot de passe de la chambre froide', description: 'Remettez les lettres dans le bon ordre : T N A U Q I U Q E', answer: 'QUANTIQUE', hint: 'C\'est le thème même du laboratoire.' },
+          { type: 'sequence', title: 'Séquence d\'activation', description: 'Mémorisez puis rejouez la séquence lumineuse.', answer: ['green','yellow','blue','red'], hint: 'Note l\'ordre dans ta tête par positions, pas par couleurs seules.' },
+          { type: 'maze', title: 'Micro-drone dans le conduit', description: 'Atteignez la sortie verte avec les flèches.', hint: 'Le bon chemin commence par aller à droite puis contourner le mur central.' },
+          { type: 'logic', title: 'Déduction finale', description: 'Quel tube contient le stabilisateur ?', options: ['Le tube A, car il est le seul rouge.', 'Le tube B, car deux indices l\'excluent moins que les autres.', 'Le tube C, car il n\'est ni à gauche ni rouge.', 'Le tube D, car il est adjacent au bleu.'], answer: 1, hint: 'Élimine A puis D ; il reste une vraie comparaison entre B et C.' }
+        ]},
+        { id: 'crypt', name: 'Crypte oubliée', accent: '#b67cff', intro: 'Symboles anciens, pièges et hiéroglyphes logiques.', stages: [
+          { type: 'code', title: 'Sarcophage scellé', description: 'Code à 4 chiffres. Indice : les chiffres sont consécutifs décroissants et leur somme vaut 30.', answer: '8769', hint: 'Trois chiffres se suivent, mais pas le quatrième.' },
+          { type: 'anagram', title: 'Nom du gardien', description: 'Réorganisez : P H I N X S', answer: 'SPHINX', hint: 'Créature mythique des énigmes.' },
+          { type: 'sequence', title: 'Runes lumineuses', description: 'Reproduisez la séquence runique.', answer: ['yellow','red','green','blue'], hint: 'La première rune est la plus chaude.' },
+          { type: 'maze', title: 'Couloir piégé', description: 'Traversez le corridor sans heurter les murs.', hint: 'Ne file pas tout droit, la sortie demande un détour par le bas.' },
+          { type: 'logic', title: 'Tombeau royal', description: 'Quelle inscription ouvre la pierre ?', options: ['La première, parce qu\'elle mentionne le soleil.', 'La deuxième, car la troisième se contredit elle-même.', 'La troisième, parce qu\'aucune autre ne dit vrai.', 'La quatrième, car elle confirme la deuxième.'], answer: 1, hint: 'Cherche la contradiction interne puis regarde qui la désigne.' }
+        ]},
+        { id: 'station', name: 'Station orbitale', accent: '#ffb454', intro: 'Circuits gravitationnels, alarmes et navigation d\'urgence.', stages: [
+          { type: 'code', title: 'Console de redémarrage', description: 'Code à 4 chiffres. Indice : il commence par 9, finit par 1 et les chiffres centraux multiplient pour donner 8.', answer: '9811', hint: 'Les chiffres du milieu peuvent être 1 et 8, 2 et 4, ou 4 et 2.' },
+          { type: 'anagram', title: 'Protocole vital', description: 'Réorganisez : O X Y G È N E', answer: 'OXYGÈNE', hint: 'Sans lui, aucune équipe ne termine la mission.' },
+          { type: 'sequence', title: 'Panneau d\'alignement', description: 'Mémorisez la séquence de correction orbitale.', answer: ['blue','green','red','yellow'], hint: 'La correction commence par la couleur la plus froide.' },
+          { type: 'maze', title: 'Drone de maintenance', description: 'Guidez le drone jusqu\'au sas de sortie.', hint: 'La sortie se gagne en longeant le bord supérieur.' },
+          { type: 'logic', title: 'Canal radio sécurisé', description: 'Quel canal est sûr ?', options: ['Canal 1, car le canal 4 est brouillé.', 'Canal 2, car 1 et 3 s\'excluent mutuellement.', 'Canal 3, car il n\'est pas pair.', 'Canal 4, car c\'est le seul non mentionné.'], answer: 1, hint: 'Quand deux propositions se détruisent, la bonne est souvent celle qui reste cohérente.' }
+        ]}
+      ];
+
+      const state = {
+        roomId: 'lab', players: [], teamName: '', score: 0, stage: 0, timeLeft: 600,
+        timer: null, attempts: 0, sessionScores: [], sequenceInput: [],
+        allowSequenceInput: false, maze: null, started: false
+      };
+
+      const el = id => document.getElementById(id);
+      const playersWrap = el('players');
+      const roomList = el('roomList');
+      const setupFeedback = el('setupFeedback');
+      const gameSection = el('gameSection');
+      const resultsSection = el('resultsSection');
+      const stageContent = el('stageContent');
+      const gameFeedback = el('gameFeedback');
+      const hintBox = el('hintBox');
+      const confetti = document.querySelector('.confetti');
+
+      function renderPlayerFields() {
+        const count = Number(el('playerCount').value);
+        playersWrap.innerHTML = '';
+        for (let i = 0; i < count; i++) {
+          const row = document.createElement('div');
+          row.className = 'player-row';
+          row.innerHTML = `
+            <div class="field" style="margin-bottom:0">
+              <label for="player-${i}">Joueur ${i + 1}</label>
+              <input id="player-${i}" type="text" maxlength="24" placeholder="Nom du joueur ${i + 1}" />
+            </div>
+            <div class="field" style="margin-bottom:0;min-width:130px">
+              <label for="role-${i}">Rôle</label>
+              <select id="role-${i}">
+                <option>Analyste</option>
+                <option>Décodeur</option>
+                <option>Éclaireur</option>
+                <option>Architecte</option>
+              </select>
+            </div>`;
+          playersWrap.appendChild(row);
+        }
+      }
+
+      function renderRooms() {
+        roomList.innerHTML = '';
+        rooms.forEach(room => {
+          const node = document.createElement('button');
+          node.className = 'room' + (room.id === state.roomId ? ' active' : '');
+          node.type = 'button';
+          node.innerHTML = `<div><strong style="display:block;font-family:var(--font-display);font-size:var(--text-lg)">${room.name}</strong><p style="color:var(--color-text-muted)">${room.intro}</p></div><span class="badge">5 étapes</span>`;
+          node.addEventListener('click', () => { state.roomId = room.id; el('selectedRoomBadge').textContent = room.name; renderRooms(); });
+          roomList.appendChild(node);
+        });
+      }
+
+      function currentRoom() { return rooms.find(r => r.id === state.roomId); }
+      function currentStage() { return currentRoom().stages[state.stage]; }
+
+      function formatTime(total) {
+        const m = String(Math.floor(total / 60)).padStart(2, '0');
+        const s = String(total % 60).padStart(2, '0');
+        return `${m}:${s}`;
+      }
+
+      function updateHud() {
+        el('timeLeft').textContent = formatTime(state.timeLeft);
+        el('scoreValue').textContent = state.score;
+        el('stageValue').textContent = `${Math.min(state.stage + 1, 5)}/5`;
+        el('teamValue').textContent = state.teamName || '—';
+        el('progressBar').style.width = `${(state.stage / 5) * 100}%`;
+      }
+
+      function addScore(points) { state.score = Math.max(0, state.score + points); updateHud(); }
+
+      function penalize(message) {
+        state.attempts += 1;
+        addScore(-10);
+        state.timeLeft = Math.max(0, state.timeLeft - 8);
+        gameFeedback.textContent = message;
+        gameFeedback.className = 'feedback status-bad';
+        if (state.attempts >= 3) { hintBox.textContent = currentStage().hint; hintBox.classList.remove('hidden'); }
+        updateHud();
+      }
+
+      function success(message) {
+        const bonus = Math.max(20, Math.floor(state.timeLeft / 4));
+        addScore(100 + bonus);
+        gameFeedback.textContent = `${message} +${100 + bonus} pts.`;
+        gameFeedback.className = 'feedback status-good';
+        setTimeout(() => { state.stage += 1; if (state.stage >= 5) finishGame(true); else renderStage(); }, 900);
+      }
+
+      function startTimer() {
+        clearInterval(state.timer);
+        state.timer = setInterval(() => { state.timeLeft -= 1; updateHud(); if (state.timeLeft <= 0) finishGame(false); }, 1000);
+      }
+
+      function makeButton(label, handler, className = 'btn btn-primary') {
+        const btn = document.createElement('button');
+        btn.type = 'button'; btn.className = className; btn.textContent = label;
+        btn.addEventListener('click', handler);
+        return btn;
+      }
+
+      function renderCodeStage(stage) {
+        const wrap = document.createElement('div');
+        wrap.innerHTML = `<div class="field"><label for="codeAnswer">Entrez le code</label><input id="codeAnswer" inputmode="numeric" maxlength="10" placeholder="Code secret" /></div>`;
+        const row = document.createElement('div'); row.className = 'btn-row';
+        row.appendChild(makeButton('Valider', () => {
+          const value = el('codeAnswer').value.trim().toUpperCase();
+          if (value === stage.answer) success('Code accepté.'); else penalize('Code incorrect.');
+        }));
+        wrap.appendChild(row);
+        return wrap;
+      }
+
+      function renderAnagramStage(stage) {
+        const wrap = document.createElement('div');
+        const letters = stage.description.split(': ')[1] || '';
+        wrap.innerHTML = `<div class="clue" style="margin-top:0">Lettres : <strong>${letters}</strong></div><div class="field"><label for="wordAnswer">Mot reconstruit</label><input id="wordAnswer" maxlength="20" placeholder="Votre réponse" /></div>`;
+        const row = document.createElement('div'); row.className = 'btn-row';
+        row.appendChild(makeButton('Valider', () => {
+          const value = el('wordAnswer').value.trim().toUpperCase();
+          if (value === stage.answer) success('Mot de passe validé.'); else penalize('Ce mot ne fonctionne pas.');
+        }));
+        wrap.appendChild(row);
+        return wrap;
+      }
+
+      function flashSequencePad(color) {
+        const pad = document.querySelector(`[data-pad="${color}"]`);
+        if (!pad) return;
+        pad.classList.add('active');
+        setTimeout(() => pad.classList.remove('active'), 420);
+      }
+
+      function playSequence(sequence) {
+        state.sequenceInput = []; state.allowSequenceInput = false;
+        sequence.forEach((color, idx) => setTimeout(() => flashSequencePad(color), 700 * (idx + 1)));
+        setTimeout(() => { state.allowSequenceInput = true; gameFeedback.textContent = 'À vous de rejouer la séquence.'; gameFeedback.className = 'feedback'; }, 700 * (sequence.length + 1));
+      }
+
+      function renderSequenceStage(stage) {
+        const wrap = document.createElement('div');
+        const seq = document.createElement('div'); seq.className = 'sequence';
+        ['red','blue','green','yellow'].forEach(color => {
+          const pad = document.createElement('button');
+          pad.type = 'button'; pad.className = `pad ${color}`; pad.dataset.pad = color;
+          pad.textContent = color[0].toUpperCase(); pad.setAttribute('aria-label', color);
+          pad.addEventListener('click', () => {
+            if (!state.allowSequenceInput) return;
+            flashSequencePad(color);
+            state.sequenceInput.push(color);
+            const idx = state.sequenceInput.length - 1;
+            if (state.sequenceInput[idx] !== stage.answer[idx]) {
+              state.sequenceInput = []; state.allowSequenceInput = false;
+              penalize('Séquence erronée. Nouvelle tentative.');
+              setTimeout(() => playSequence(stage.answer), 900);
+              return;
+            }
+            if (state.sequenceInput.length === stage.answer.length) success('Séquence correcte.');
+          });
+          seq.appendChild(pad);
+        });
+        wrap.appendChild(seq);
+        const row = document.createElement('div'); row.className = 'btn-row';
+        row.appendChild(makeButton('Rejouer la séquence', () => playSequence(stage.answer), 'btn btn-ghost'));
+        wrap.appendChild(row);
+        setTimeout(() => playSequence(stage.answer), 400);
+        return wrap;
+      }
+
+      function setupMaze() {
+        const canvas = document.getElementById('mazeCanvas');
+        const ctx = canvas.getContext('2d');
+        const cell = 40;
+        const walls = [
+          [1,0,1,0,0,0,1],[1,0,1,0,1,0,1],[0,0,0,0,1,0,0],
+          [0,1,1,0,1,1,0],[0,0,0,0,0,0,0],[1,1,0,1,1,0,1],[0,0,0,0,0,0,0]
+        ];
+        const player = { x: 0, y: 0 };
+        const exit = { x: 6, y: 6 };
+        state.maze = { canvas, ctx, cell, walls, player, exit };
+        drawMaze();
+      }
+
+      function drawMaze() {
+        const { ctx, canvas, cell, walls, player, exit } = state.maze;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let y = 0; y < walls.length; y++) {
+          for (let x = 0; x < walls[y].length; x++) {
+            ctx.fillStyle = walls[y][x] ? '#25314c' : '#0f172a';
+            ctx.fillRect(x * cell, y * cell, cell - 2, cell - 2);
+          }
+        }
+        ctx.fillStyle = '#2dd4bf';
+        ctx.fillRect(exit.x * cell + 8, exit.y * cell + 8, cell - 16, cell - 16);
+        ctx.fillStyle = '#f8fafc';
+        ctx.beginPath();
+        ctx.arc(player.x * cell + cell / 2, player.y * cell + cell / 2, 12, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function moveMaze(dx, dy) {
+        if (!state.maze) return;
+        const { walls, player, exit } = state.maze;
+        const nx = player.x + dx; const ny = player.y + dy;
+        if (nx < 0 || ny < 0 || ny >= walls.length || nx >= walls[0].length || walls[ny][nx]) { penalize('Mur détecté par le drone.'); return; }
+        player.x = nx; player.y = ny; drawMaze();
+        if (player.x === exit.x && player.y === exit.y) success('Sortie atteinte.');
+      }
+
+      function renderMazeStage() {
+        const wrap = document.createElement('div'); wrap.className = 'maze-wrap';
+        wrap.innerHTML = `<canvas id="mazeCanvas" width="280" height="280" aria-label="Labyrinthe"></canvas><p class="keyhint">Déplacez le drone avec les flèches du clavier ou les boutons ci-dessous.</p>`;
+        const row = document.createElement('div'); row.className = 'btn-row';
+        [['↑',0,-1],['↓',0,1],['←',-1,0],['→',1,0]].forEach(([lab,dx,dy]) => row.appendChild(makeButton(lab, () => moveMaze(dx,dy), 'btn')));
+        wrap.appendChild(row);
+        setTimeout(setupMaze, 50);
+        return wrap;
+      }
+
+      function renderLogicStage(stage) {
+        const wrap = document.createElement('div');
+        const choices = document.createElement('div'); choices.className = 'choices';
+        stage.options.forEach((text, idx) => {
+          const btn = document.createElement('button');
+          btn.type = 'button'; btn.className = 'choice'; btn.textContent = text;
+          btn.addEventListener('click', () => idx === stage.answer ? success('Bonne déduction.') : penalize('Cette hypothèse ne tient pas.'));
+          choices.appendChild(btn);
+        });
+        wrap.appendChild(choices);
+        return wrap;
+      }
+
+      function renderStage() {
+        state.attempts = 0;
+        hintBox.classList.add('hidden'); hintBox.textContent = '';
+        gameFeedback.textContent = ''; gameFeedback.className = 'feedback';
+        updateHud();
+        const stage = currentStage();
+        el('stageTitle').textContent = stage.title;
+        el('stageDescription').textContent = stage.description;
+        el('roomThemeLabel').textContent = currentRoom().name;
+        stageContent.innerHTML = '';
+        let node;
+        if (stage.type === 'code') node = renderCodeStage(stage);
+        if (stage.type === 'anagram') node = renderAnagramStage(stage);
+        if (stage.type === 'sequence') node = renderSequenceStage(stage);
+        if (stage.type === 'maze') node = renderMazeStage(stage);
+        if (stage.type === 'logic') node = renderLogicStage(stage);
+        stageContent.appendChild(node);
+        el('progressBar').style.width = `${(state.stage / 5) * 100}%`;
+      }
+
+      function buildFinalPlayers() {
+        const board = el('finalPlayers'); board.innerHTML = '';
+        state.players.forEach((player, idx) => {
+          const bonus = Math.max(0, Math.floor(state.timeLeft / (idx + 2)));
+          const item = document.createElement('div'); item.className = 'rank';
+          item.innerHTML = `<div><strong>${player.name}</strong><div style="color:var(--color-text-muted)">${player.role}</div></div><div style="text-align:right"><strong>${state.score + bonus}</strong><div style="color:var(--color-text-muted)">Score individuel</div></div>`;
+          board.appendChild(item);
+        });
+      }
+
+      function renderSessionBoard() {
+        const board = el('sessionBoard'); board.innerHTML = '';
+        if (!state.sessionScores.length) {
+          board.innerHTML = `<div class="rank"><div><strong>Aucune équipe encore</strong><div style="color:var(--color-text-muted)">Lancez une mission pour remplir le classement.</div></div><div>—</div></div>`;
+          return;
+        }
+        [...state.sessionScores].sort((a,b) => b.score - a.score).forEach((entry, idx) => {
+          const div = document.createElement('div'); div.className = 'rank';
+          div.innerHTML = `<div><strong>#${idx + 1} — ${entry.team}</strong><div style="color:var(--color-text-muted)">${entry.room} · ${entry.players.join(', ')}</div></div><div style="text-align:right"><strong>${entry.score}</strong><div style="color:var(--color-text-muted)">${entry.time}</div></div>`;
+          board.appendChild(div);
+        });
+      }
+
+      function dropConfetti() {
+        confetti.innerHTML = '';
+        for (let i = 0; i < 60; i++) {
+          const s = document.createElement('span');
+          s.style.left = Math.random() * 100 + 'vw';
+          s.style.background = ['#4fd1c5','#b67cff','#ffb454','#7ddc73','#f472b6'][i % 5];
+          s.style.animationDuration = (3 + Math.random() * 2.5) + 's';
+          s.style.opacity = .9;
+          confetti.appendChild(s);
+        }
+        setTimeout(() => confetti.innerHTML = '', 6000);
+      }
+
+      function finishGame(successState) {
+        clearInterval(state.timer); state.started = false;
+        gameSection.classList.add('hidden'); resultsSection.classList.remove('hidden');
+        const summary = successState
+          ? `${state.teamName} a terminé ${currentRoom().name} avec ${state.score} points et ${formatTime(state.timeLeft)} restantes.`
+          : `${state.teamName} n'a pas déverrouillé le coffre à temps. Score final : ${state.score}.`;
+        el('resultsSummary').textContent = summary;
+        buildFinalPlayers();
+        state.sessionScores.push({ team: state.teamName, room: currentRoom().name, players: state.players.map(p => p.name), score: state.score, time: formatTime(state.timeLeft) });
+        renderSessionBoard();
+        if (successState) dropConfetti();
+      }
+
+      function collectSetup() {
+        const teamName = el('teamName').value.trim();
+        const count = Number(el('playerCount').value);
+        const players = [];
+        for (let i = 0; i < count; i++) {
+          const name = el(`player-${i}`).value.trim();
+          const role = el(`role-${i}`).value;
+          if (!name) return { error: `Le joueur ${i + 1} doit avoir un nom.` };
+          players.push({ name, role });
+        }
+        if (!teamName) return { error: 'Le nom de l\'équipe est obligatoire.' };
+        return { teamName, players };
+      }
+
+      function startGame() {
+        const setup = collectSetup();
+        if (setup.error) { setupFeedback.textContent = setup.error; setupFeedback.className = 'feedback status-bad'; return; }
+        setupFeedback.textContent = '';
+        state.teamName = setup.teamName; state.players = setup.players;
+        state.score = 0; state.stage = 0; state.timeLeft = 600; state.started = true;
+        gameSection.classList.remove('hidden'); resultsSection.classList.add('hidden');
+        renderStage(); updateHud(); startTimer();
+        gameSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      function resetSession() {
+        clearInterval(state.timer);
+        state.score = 0; state.stage = 0; state.timeLeft = 600; state.started = false; state.sessionScores = [];
+        el('teamName').value = '';
+        setupFeedback.textContent = 'Session réinitialisée.';
+        setupFeedback.className = 'feedback';
+        resultsSection.classList.add('hidden'); gameSection.classList.add('hidden');
+        renderSessionBoard(); renderPlayerFields();
+      }
+
+      document.addEventListener('keydown', e => {
+        if (!state.started || !state.maze || currentStage().type !== 'maze') return;
+        if (e.key === 'ArrowUp') moveMaze(0,-1);
+        if (e.key === 'ArrowDown') moveMaze(0,1);
+        if (e.key === 'ArrowLeft') moveMaze(-1,0);
+        if (e.key === 'ArrowRight') moveMaze(1,0);
+      });
+
+      document.querySelector('[data-theme-toggle]').addEventListener('click', () => {
+        const root = document.documentElement;
+        root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      });
+
+      el('playerCount').addEventListener('change', renderPlayerFields);
+      el('startBtn').addEventListener('click', startGame);
+      el('resetBtn').addEventListener('click', resetSession);
+      el('playAgainBtn').addEventListener('click', () => { resultsSection.classList.add('hidden'); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+      el('hintBtn').addEventListener('click', () => { hintBox.textContent = currentStage().hint; hintBox.classList.remove('hidden'); addScore(-5); updateHud(); });
+
+      renderPlayerFields();
+      renderRooms();
+      renderSessionBoard();
+    })();
+  </script>
+</body>
+</html>
